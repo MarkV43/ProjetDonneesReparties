@@ -9,7 +9,6 @@ import java.rmi.server.UnicastRemoteObject;
 
 public class Server extends UnicastRemoteObject implements Server_itf {
 
-
     protected Server() throws RemoteException {
         super();
     }
@@ -57,7 +56,7 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
             Registry reg = LocateRegistry.createRegistry(port);
 
-            var URL = host +  ':' + port + '/' + name;
+            var URL = host + ':' + port + '/' + name;
 
             Naming.rebind(URL, server);
 

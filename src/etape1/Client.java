@@ -2,8 +2,6 @@ package etape1;
 
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
-import java.rmi.registry.*;
-import java.net.*;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
 
@@ -11,20 +9,19 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		super();
 	}
 
-
-///////////////////////////////////////////////////
-//         Interface to be used by applications
-///////////////////////////////////////////////////
+	///////////////////////////////////////////////////
+	// Interface to be used by applications
+	///////////////////////////////////////////////////
 
 	// initialization of the client layer
 	public static void init() {
 	}
-	
+
 	// lookup in the name server
 	public static SharedObject lookup(String name) {
 		return null;
-	}		
-	
+	}
+
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
 	}
@@ -35,10 +32,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		// Retrouver cet objet
 		return null;
 	}
-	
-/////////////////////////////////////////////////////////////
-//    Interface to be used by the consistency protocol
-////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////
+	// Interface to be used by the consistency protocol
+	////////////////////////////////////////////////////////////
 
 	// request a read lock from the server
 	public static Object lock_read(int id) {
@@ -46,7 +43,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	// request a write lock from the server
-	public static Object lock_write (int id) {
+	public static Object lock_write(int id) {
 		return null;
 	}
 
@@ -55,11 +52,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		return null;
 	}
 
-
 	// receive a reader invalidation request from the server
 	public void invalidate_reader(int id) throws java.rmi.RemoteException {
 	}
-
 
 	// receive a writer invalidation request from the server
 	public Object invalidate_writer(int id) throws java.rmi.RemoteException {
