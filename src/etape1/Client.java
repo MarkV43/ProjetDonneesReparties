@@ -31,7 +31,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// creation of a shared object
 	public static SharedObject create(Object o) {
-		// Demander a serveur la création du objet
+		// Demander au serveur la création de l'objet
 		// Retrouver cet objet
 		return null;
 	}
