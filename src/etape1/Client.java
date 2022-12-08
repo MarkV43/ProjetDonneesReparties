@@ -1,9 +1,14 @@
 package etape1;
 
+import java.net.MalformedURLException;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 
 public class Client extends UnicastRemoteObject implements Client_itf {
+
+	private static Server_itf server;
+	private static Client_itf client;
 
 	public Client() throws RemoteException {
 		super();
@@ -15,22 +20,51 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// initialization of the client layer
 	public static void init() {
+		try {
+			server = (Server_itf) Naming.lookup("//localhost:8080/Server");
+			if (client == null) {
+				client = new Client();
+			}
+		} catch (MalformedURLException | RemoteException | NotBoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	// lookup in the name server
 	public static SharedObject lookup(String name) {
-		return null;
+		try {
+			int id = server.lookup(name);
+			var so = new SharedObject(id);
+			return so;
+
+		} catch (RemoteException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	// binding in the name server
 	public static void register(String name, SharedObject_itf so) {
+		try {
+
+			server.register(name, so.getId());
+
+		} catch (RemoteException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	// creation of a shared object
 	public static SharedObject create(Object o) {
 		// Demander au serveur la création de l'objet
 		// Retrouver cet objet
-		return null;
+		try {
+
+			int id = server.create(o);
+			return new SharedObject(id);
+
+		} catch (RemoteException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/////////////////////////////////////////////////////////////
@@ -39,7 +73,11 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 
 	// request a read lock from the server
 	public static Object lock_read(int id) {
-		return null;
+		try {
+			return server.lock_read(id, client);
+		} catch (RemoteException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	// request a write lock from the server

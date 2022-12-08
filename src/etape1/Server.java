@@ -6,8 +6,21 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class Server extends UnicastRemoteObject implements Server_itf {
+
+    private HashMap<String, Integer> ids = new HashMap<>();
+    private ArrayList<Object> objects = new ArrayList<>();
+    private ArrayList<Integer> locks;
+    private HashSet<Client_itf> connections;
+    /*
+     * 0 NL
+     * 1 RL
+     * 2 WL
+     */
 
     protected Server() throws RemoteException {
         super();
@@ -15,27 +28,69 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     @Override
     public int lookup(String name) throws RemoteException {
-        return -1;
+        return ids.get(name);
     }
 
     @Override
     public void register(String name, int id) throws RemoteException {
-
+        ids.put(name, id);
     }
 
     @Override
     public int create(Object o) throws RemoteException {
-        return 0;
+        int id = objects.size();
+        objects.add(o);
+        return id;
     }
 
     @Override
     public Object lock_read(int id, Client_itf client) throws RemoteException {
-        return null;
+        if (locks.get(id) == 2) { // WL
+            connections.forEach((c) -> {
+                try {
+                    if (!c.equals(client))
+                        c.reduce_lock(id);
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        connections.add(client);
+
+        locks.set(id, 1); // RL
+        return objects.get(id);
     }
 
     @Override
     public Object lock_write(int id, Client_itf client) throws RemoteException {
-        return null;
+        switch (locks.get(id)) {
+            case 1: // RL
+                connections.forEach((c) -> {
+                    try {
+                        if (!c.equals(client))
+                            c.invalidate_reader(id);
+                    } catch (RemoteException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                break;
+            case 2: // WL
+                connections.forEach((c) -> {
+                    try {
+                        if (!c.equals(client))
+                            c.invalidate_writer(id);
+                    } catch (RemoteException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                break;
+        }
+
+        connections.add(client);
+
+        locks.set(id, 2);
+        return objects.get(id);
     }
 
     public static void main(String[] args) {
