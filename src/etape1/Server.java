@@ -7,6 +7,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -14,13 +15,19 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     private HashMap<String, Integer> ids = new HashMap<>();
     private ArrayList<Object> objects = new ArrayList<>();
-    private ArrayList<Integer> locks;
-    private HashSet<Client_itf> connections;
+    // private HashMap<Integer> locks = new HashMap<>();
+    private HashMap<Client_itf, ArrayList<Integer>> connections = new HashMap<>();
     /*
+     * This is our new lock
      * 0 NL
      * 1 RL
      * 2 WL
      */
+    private static String[] LOCK_NAMES = {
+        "NL",
+        "RL",
+        "WL",
+    };
 
     protected Server() throws RemoteException {
         super();
@@ -28,7 +35,11 @@ public class Server extends UnicastRemoteObject implements Server_itf {
 
     @Override
     public int lookup(String name) throws RemoteException {
-        return ids.get(name);
+        Integer val = ids.get(name);
+        if (val == null) {
+            return -1;
+        }
+        return val;
     }
 
     @Override
@@ -40,56 +51,118 @@ public class Server extends UnicastRemoteObject implements Server_itf {
     public int create(Object o) throws RemoteException {
         int id = objects.size();
         objects.add(o);
+        for (var list : connections.values()) {
+            list.add(0); // NL
+        }
         return id;
+    }
+
+    // TODO: Remove this
+    private void showStates(int id) {
+        var list = new ArrayList<>(connections.keySet());
+
+        list.sort((a, b) -> {
+            try {
+                return a.getName().compareTo(b.getName());
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        list.forEach((x) -> {
+            try {
+                var name = x.getName();
+                var lock = connections.get(x).get(id);
+                var lock_name = LOCK_NAMES[lock];
+
+                System.out.println(name + " = " + lock_name);
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
     public Object lock_read(int id, Client_itf client) throws RemoteException {
-        if (locks.get(id) == 2) { // WL
-            connections.forEach((c) -> {
-                try {
-                    if (!c.equals(client))
-                        c.reduce_lock(id);
-                } catch (RemoteException e) {
-                    throw new RuntimeException(e);
+        connections.forEach((conn, locks) -> {
+            if (conn.equals(client))
+                return;
+
+            try {
+                switch (locks.get(id)) {
+                    case 1: // RL
+                        // do nothing
+                        break;
+                    case 2: // WL
+                        var obj = conn.reduce_lock(id);
+
+                        if (obj != null) {
+                            objects.set(id, obj);
+                        }
+
+                        locks.set(id, 1); // RL
+
+                        break;
+                    default:
+                        break;
                 }
-            });
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        if (!connections.containsKey(client)) {
+            int size = objects.size();
+            ArrayList<Integer> locks = new ArrayList<>(Collections.nCopies(size, 0));
+            locks.set(id, 1); // RL
+            connections.put(client, locks);
+        } else {
+            connections.get(client).set(id, 1);
         }
 
-        connections.add(client);
+        showStates(id);
 
-        locks.set(id, 1); // RL
         return objects.get(id);
     }
 
     @Override
     public Object lock_write(int id, Client_itf client) throws RemoteException {
-        switch (locks.get(id)) {
-            case 1: // RL
-                connections.forEach((c) -> {
-                    try {
-                        if (!c.equals(client))
-                            c.invalidate_reader(id);
-                    } catch (RemoteException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                break;
-            case 2: // WL
-                connections.forEach((c) -> {
-                    try {
-                        if (!c.equals(client))
-                            c.invalidate_writer(id);
-                    } catch (RemoteException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                break;
+        connections.forEach((conn, locks) -> {
+            if (conn.equals(client))
+                return;
+
+            try {
+                switch (locks.get(id)) {
+                    case 1: // RL
+                        conn.invalidate_reader(id);
+                        break;
+                    case 2: // WL
+                        var obj = conn.invalidate_writer(id);
+
+                        if (obj != null) {
+                            objects.set(id, obj);
+                        }
+
+                        break;
+                }
+
+                locks.set(id, 0); // NL
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        if (!connections.containsKey(client)) {
+            int size = objects.size();
+            ArrayList<Integer> locks = new ArrayList<>(Collections.nCopies(size, 0));
+            locks.set(id, 2); // RL
+            connections.put(client, locks);
+        } else {
+            connections.get(client).set(id, 2);
         }
 
-        connections.add(client);
+        showStates(id);
 
-        locks.set(id, 2);
         return objects.get(id);
     }
 
