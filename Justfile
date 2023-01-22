@@ -17,7 +17,7 @@ execute FILE *PARAMS:
     just r {{FILE}} {{PARAMS}}
 
 irc NAME:
-    just e etape1/Irc {{NAME}}
+    just e etape2/Irc {{NAME}}
 
 server PORT='8080':
-    just e etape1/Server Server {{PORT}}
+    just e etape2/Server Server {{PORT}}

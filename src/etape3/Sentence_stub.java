@@ -1,4 +1,4 @@
-package etape2;
+package etape3;
 
 public class Sentence_stub extends SharedObject implements Sentence_itf {
 
