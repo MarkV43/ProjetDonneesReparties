@@ -52,7 +52,9 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				return null;
 			}
 
-			var so = new Sentence_stub(id);
+			Object obj = lock_read(id);
+			SharedObject so = createStub(obj, id);
+			so.unlock();
 
 			System.out.println(so.id);
 
@@ -82,13 +84,28 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 		try {
 
 			int id = server.create(o);
-			var obj = new Sentence_stub(id);
+			SharedObject so = createStub(o, id);
 
-			objects.put(id, obj);
+			objects.put(id, so);
 
-			return obj;
+			return so;
 
 		} catch (RemoteException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static SharedObject createStub(Object obj, int id) {
+		try {
+			Class<?> class1 = Class.forName(obj.getClass().getName() + "_stub");
+
+			java.lang.reflect.Constructor<?> constructor = 
+				class1.getConstructor(new Class[] { int.class, Object.class });
+			
+			SharedObject so = (SharedObject) constructor.newInstance(new Object[] { id, obj });
+
+			return so;			
+		} catch(Exception e) {
 			throw new RuntimeException(e);
 		}
 	}

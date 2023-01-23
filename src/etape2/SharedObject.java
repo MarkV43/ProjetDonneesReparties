@@ -37,6 +37,12 @@ public class SharedObject implements Serializable, SharedObject_itf {
 		lock = 0;
 	}
 
+	public SharedObject(int id, Object o) {
+		obj = o;
+		this.id = id;
+		lock = 0;
+	}
+
 	// invoked by the user program on the client node
 	public void lock_read() {
 		var tmp = lock;

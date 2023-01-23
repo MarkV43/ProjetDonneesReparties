@@ -8,22 +8,22 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public int id;
 	public int lock;
 	/*
-	 * 0 NL
-	 * 1 RLC
-	 * 2 WLC
-	 * 3 RLT
-	 * 4 WLT
-	 * 5 RLT_WLC
-	 */
+	* 0 NL
+	* 1 RLC
+	* 2 WLC
+	* 3 RLT
+	* 4 WLT
+	* 5 RLT_WLC
+	*/
 
-	 private static String[] LOCK_NAMES = {
+	private static String[] LOCK_NAMES = {
 		"NL",
 		"RLC",
 		"WLC",
 		"RLT",
 		"WLT",
 		"RLT_WLC"
-	 };
+	};
 
 	public SharedObject(int id) {
 		this.id = id;

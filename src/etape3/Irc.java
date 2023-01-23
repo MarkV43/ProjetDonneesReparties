@@ -7,6 +7,7 @@ public class Irc extends Frame {
 	public TextArea text;
 	public TextField data;
 	Sentence_itf sentence;
+	SharedObject reference;
 	static String myName;
 
 	public static void main(String[] argv) {
@@ -22,16 +23,23 @@ public class Irc extends Frame {
 
 		// look up the IRC object in the name server
 		// if not found, create it, and register it in the name server
-		Sentence_itf s = (Sentence_itf) Client.lookup("IRC");
-		if (s == null) {
-			s = (Sentence_itf) Client.create(new Sentence());
-			Client.register("IRC", s);
+		Sentence_itf o1 = (Sentence_itf) Client.lookup("IRC-1", Sentence_stub.class);
+		if (o1 == null) {
+			o1 = (Sentence_itf) Client.create(new Sentence(), Sentence_stub.class);
+			Client.register("IRC-1", o1);
 		}
+
+		SharedObject o2 = Client.lookup("IRC-2", SharedObject.class);
+		if (o2 == null) {
+			o2 = (SharedObject) Client.create(o1, SharedObject.class);
+			Client.register("IRC-2", o2);
+		}
+
 		// create the graphical part
-		new Irc(s);
+		new Irc(o1, o2);
 	}
 
-	public Irc(Sentence_itf s) {
+	public Irc(Sentence_itf s, SharedObject ref) {
 
 		setLayout(new FlowLayout());
 
@@ -55,6 +63,7 @@ public class Irc extends Frame {
 		setVisible(true);
 
 		sentence = s;
+		reference = ref;
 	}
 }
 
@@ -68,13 +77,18 @@ class readListener implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 
 		// lock the object in read mode
-		irc.sentence.lock_read();
+		irc.reference.lock_read();
+
+		Sentence_itf sentence = (Sentence_itf) irc.reference.obj;
+		sentence.lock_read();
 
 		// invoke the method
-		String s = irc.sentence.read();
+		String s = sentence.read();
+
+		sentence.unlock();
 
 		// unlock the object
-		irc.sentence.unlock();
+		irc.reference.unlock();
 
 		// display the read value
 		irc.text.append(s + "\n");
@@ -93,14 +107,18 @@ class writeListener implements ActionListener {
 		// get the value to be written from the buffer
 		String s = irc.data.getText();
 
-		// lock the object in write mode
-		irc.sentence.lock_write();
+		irc.reference.lock_read();
+
+		Sentence_itf sentence = (Sentence_itf) irc.reference.obj;
+		sentence.lock_write();
 
 		// invoke the method
-		irc.sentence.write(Irc.myName + " wrote " + s);
+		sentence.write(Irc.myName + " wrote " + s);
 		irc.data.setText("");
 
+		sentence.unlock();
+
 		// unlock the object
-		irc.sentence.unlock();
+		irc.reference.unlock();
 	}
 }

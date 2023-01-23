@@ -1,5 +1,6 @@
 package etape3;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
@@ -24,6 +25,10 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	// Interface to be used by applications
 	///////////////////////////////////////////////////
 
+	public static boolean hasSingleton() {
+		return client != null;
+	}
+
 	@Override
     public String getName() throws RemoteException {
         return Irc.myName;
@@ -44,7 +49,7 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	// lookup in the name server
-	public static SharedObject_itf lookup(String name) {
+	public static <T extends SharedObject> T lookup(String name, Class<T> class1) {
 		try {
 			int id = server.lookup(name);
 
@@ -52,14 +57,22 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 				return null;
 			}
 
-			var so = new Sentence_stub(id);
+			return lookupId(id, class1);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-			System.out.println(so.id);
+	public static <T extends SharedObject> T lookupId(int id, Class<T> class1) {
+		try {
+			T so = class1.getDeclaredConstructor().newInstance(id);
+
+			System.out.println(so.getId());
 
 			objects.put(id, so);
 
 			return so;
-		} catch (RemoteException e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -76,21 +89,45 @@ public class Client extends UnicastRemoteObject implements Client_itf {
 	}
 
 	// creation of a shared object
-	public static SharedObject_itf create(Object o) {
+	public static <T extends SharedObject> T create(Object o, Class<T> class1) {
 		// Demander au serveur la création de l'objet
 		// Retrouver cet objet
 		try {
 
 			int id = server.create(o);
-			var obj = new Sentence_stub(id);
+
+			var obj = class1.getDeclaredConstructor().newInstance(id);
 
 			objects.put(id, obj);
 
 			return obj;
 
-		} catch (RemoteException e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public static SharedObject findId(int id) {
+		return objects.get(id);
+	}
+
+	public static SharedObject createStub(Object obj, int id) {
+		SharedObject so = null;
+
+		try {
+			Class<?> class1 = Class.forName(obj.getClass().getName() + "_stub");
+
+			java.lang.reflect.Constructor<?> constructor = 
+				class1.getConstructor(new Class[] { int.class, Object.class });
+
+			so = (SharedObject) constructor.newInstance(new Object[] { id, obj });
+
+			objects.put(so.getId(), so);
+		} catch (Exception e) {
+			new RuntimeException(e);
+		}
+
+		return so;
 	}
 
 	/////////////////////////////////////////////////////////////

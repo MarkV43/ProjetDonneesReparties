@@ -1,23 +1,17 @@
 package etape2;
 
-public class Sentence_stub extends SharedObject implements Sentence_itf {
-
-	public Sentence_stub(int id) {
-		super(id);
+public class Sentence_stub extends SharedObject implements Sentence_itf, java.io.Serializable {
+	public Sentence_stub (int id, Object obj) {
+		super(id, obj);
 	}
 
-	public Sentence_stub(Object o) {
-		super(o);
+	public void write(java.lang.String arg0) {
+		Sentence o = (Sentence) obj;
+		o.write(arg0);
 	}
 
-	public void write(String text) {
-		Sentence s = (Sentence) obj;
-		s.write(text);
+	public java.lang.String read() {
+		Sentence o = (Sentence) obj;
+		return o.read();
 	}
-
-	public String read() {
-		Sentence s = (Sentence) obj;
-		return s.read();
-	}
-
 }

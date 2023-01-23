@@ -130,4 +130,14 @@ public class SharedObject implements Serializable, SharedObject_itf {
 	public int getId() {
 		return id;
 	}
+
+	private Object readResolve() {
+		SharedObject so = Client.findId(id);
+
+		if (so == null && Client.hasSingleton()) {
+			so = Client.lookupId(id, SharedObject.class);
+		}
+		
+		return so;
+	}
 }
